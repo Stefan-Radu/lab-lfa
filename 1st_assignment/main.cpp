@@ -1,3 +1,5 @@
+// Stefan-Octavian Radu - grupa 131
+
 #include <iostream>
 #include <fstream>
 #include <vector>
