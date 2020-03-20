@@ -6,6 +6,7 @@
 #include <queue>
 #include <set>
 #include <cassert>
+#include <map>
 
 using namespace std;
 
@@ -65,13 +66,18 @@ public:
   void testString(string s) {
 
     queue < pair < int, int > > q;
+    map < pair < int, int >, bool > used;
+
     q.push({initialState, 0});
+    used[{initialState, 0}] = true;
 
     bool isAccepted = false;
     while (not q.empty()) {
 
       auto curState = q.front();
       q.pop();
+
+      used[curState] = false;
 
       if (curState.second == (int) s.size()) {
         if(isFinalState[curState.first]) {
@@ -84,12 +90,18 @@ public:
       for (auto transition : transitions[curState.first]) {
 
         if (transition.transtionChar == '$') {
-          q.push({transition.nextNode, curState.second});
+          if (not used[{transition.nextNode, curState.second}]) {
+            used[{transition.nextNode, curState.second}] = true;
+            q.push({transition.nextNode, curState.second});
+          }
           continue;
         }
 
         if (transition.transtionChar == s[curState.second]) {
-          q.push({transition.nextNode, curState.second + 1});
+          if (not used[{transition.nextNode, curState.second + 1}]) {
+            used[{transition.nextNode, curState.second + 1}] = true;
+            q.push({transition.nextNode, curState.second + 1});
+          }
         }
       }
     }
