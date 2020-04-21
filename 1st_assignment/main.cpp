@@ -84,7 +84,6 @@ public:
           isAccepted = true;
           break;
         }
-        continue;
       }
 
       for (auto transition : transitions[curState.first]) {
@@ -96,6 +95,8 @@ public:
           }
           continue;
         }
+
+        if (curState.second == (int) s.size()) continue;
 
         if (transition.transtionChar == s[curState.second]) {
           if (not used[{transition.nextNode, curState.second + 1}]) {
