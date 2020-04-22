@@ -131,7 +131,7 @@ void Automata::testString(const std::string &s) {
 }
 /*}}}*/
 
-// ================================= PRINTING THE AUTOMATA ==================================={{{
+// ================================= AUTOMATA FUNCTIONALITY ==================================={{{
 
 std::ostream& operator << (std::ostream &os, const Automata& a) {
 
@@ -156,6 +156,49 @@ std::ostream& operator << (std::ostream &os, const Automata& a) {
   }
 
   return os;
+}
+
+Automata* Automata::getNewAutomata(const int &stateCount, const std::vector < int > &finalStates,
+    const std::vector < std::vector < Transition > > &transitions) {
+
+  std::ofstream out("_");
+
+  // nr of states
+  out << stateCount << '\n';
+
+  // alphabet
+  out << (int) this->alphabet.size() << '\n';
+  for (const char &c : this->alphabet) out << c << ' ';
+  out << '\n';
+
+  // initial state
+  out << this->initialState << '\n';
+
+  // final states
+  out << (int) finalStates.size() << '\n';
+  for (const int &x : finalStates) out << x << ' ';
+  out << '\n';
+
+  // transitions
+
+  int transitionCount = 0;
+  for (int state = 0; state < stateCount; ++ state) {
+    transitionCount += (int) transitions[state].size();
+  }
+
+  out << transitionCount << '\n';
+
+  for (int state = 0; state < stateCount; ++ state) {
+    for (auto &x : transitions[state]) {
+      out << state << ' ' << x.character << ' ' << x.state << '\n'; 
+    }
+  }
+
+  out.close();
+  Automata *aux = new Automata("_");
+  std::remove("_");
+
+  return aux;
 }
 
 /*}}}*/
@@ -241,7 +284,7 @@ Automata* Automata::nfaFromLnfa() {
 
   std::vector < int > nfaFinalStates;
   nfaFinalStates.reserve(nfaStateCount);
-  std::vector < std::set < Transition > > nfaTransitions(nfaStateCount);
+  std::vector < std::vector < Transition > > nfaTransitions(nfaStateCount);
 
   std::fill(used.begin(), used.end(), false);
   for (int i = 0; i < this->stateCount; ++ i) {
@@ -249,53 +292,17 @@ Automata* Automata::nfaFromLnfa() {
     if (not used[state]) {
       used[state] = true;
       if (nfaIsFinalStateAux[state]) nfaFinalStates.emplace_back(normalize[state]);
+
+      std::set < Transition > aux;
       for (const Transition &trans : nfaTransitionsAux[state]) {
-        nfaTransitions[normalize[state]].insert({normalize[dsu.getParent(trans.state)], trans.character});
+        aux.insert({normalize[dsu.getParent(trans.state)], trans.character});
       }
+
+      for (const Transition &trans : aux) nfaTransitions[normalize[state]].emplace_back(trans);
     }
   }
 
-  // output
-  std::ofstream out("nfa_from_lnfa");
-
-  // nr of states
-  out << nfaStateCount << '\n';
-
-  // alphabet
-  out << (int) alphabet.size() << '\n';
-  for (const char &c : alphabet) out << c << ' ';
-  out << '\n';
-
-  // initial state
-  out << initialState << '\n';
-
-  // final states
-  out << (int) nfaFinalStates.size() << '\n';
-  for (int &x : nfaFinalStates) out << x << ' ';
-  out << '\n';
-
-  // transitions
-
-  int transitionCnt = 0;
-  for (int state = 0; state < nfaStateCount; ++ state) {
-    transitionCnt += (int) nfaTransitions[state].size();
-  }
-
-  out << transitionCnt << '\n';
-
-  for (int state = 0; state < nfaStateCount; ++ state) {
-    for (auto &x : nfaTransitions[state]) {
-      out << state << ' ' << x.character << ' ' << x.state << '\n'; 
-    }
-  }
-
-  out.close();
-
-  Automata *aux = new Automata("nfa_from_lnfa");
-
-  std::remove("nfa_from_lnfa");
-
-  return aux;
+  return getNewAutomata(nfaStateCount, nfaFinalStates, nfaTransitions);
 }
 
 /*}}}*/
@@ -304,34 +311,62 @@ Automata* Automata::nfaFromLnfa() {
 
 Automata* Automata::dfsFromNfa() {
 
+  // Step 1 & 3: remove nondeterminism and rename states
+
   std::map < std::set < int >, int > normalize;
-
-  std::vector < int > dfaIsFinalState;
-
-  int dfaTransitionCnt = 0, dfaFinalStateCount = 0, dfaStateCount = 0;
-  std::vector < std::vector < Transition > > transitions;
-
-
-  // remove nondeterminism
+  std::vector < std::vector < Transition > > dfaTransitions(1);
 
   std::queue < std::set < int > > q;
 
-  int index = 0;
+  int dfaStateCount = 0;
   q.push({initialState});
-  normalize[{initialState}] = index ++;
+  normalize[{initialState}] = dfaStateCount ++;
 
   while (not q.empty()) {
 
     std::set < int > curState = q.front();
     q.pop();
 
-    for (const char &c : this->alphabet) {
+    for (const char &x : alphabet) {
 
+      std::set < int > nextState;
+      for (const int &state : curState) {
+        for (const Transition &trans : transitions[state]) {
+          if (trans.character != x) continue;
+          nextState.insert(trans.state);
+        }
+      }
 
+      if (nextState.size() == 0) continue;
 
+      if (normalize.find(nextState) == normalize.end()) {
+        q.push(nextState);
+        normalize[nextState] = dfaStateCount ++;
+        dfaTransitions.push_back(std::vector < Transition >());
+      }
+
+      dfaTransitions[normalize[curState]].emplace_back(normalize[nextState], x);
     }
   }
 
+  // Step 2: innitial and final stated of the dfa
+
+  std::vector < int > dfaFinalStates;
+
+  for (const auto &x : normalize) {
+
+    bool fs = false;
+    for (const int &state : x.first) {
+      if (isFinalState[state]) {
+        fs = true;
+        break;
+      }
+    }
+
+    if (fs) dfaFinalStates.emplace_back(x.second);
+  }
+
+  return getNewAutomata(dfaStateCount, dfaFinalStates, dfaTransitions);
 }
 
 /*}}}*/

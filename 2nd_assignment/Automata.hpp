@@ -40,11 +40,13 @@ private:
   std::vector < std::vector < Transition > > transitions; 
   std::vector < std::vector < Transition > > lambdaTransitions; 
 
-
   void initAutomata(const std::string&);
   void testString(const std::string&);
 
   void makeLamdaClosure(int, std::vector < std::set < int > >&, std::vector < bool >&);
+
+  Automata* getNewAutomata(const int&, const std::vector < int >&,
+      const std::vector < std::vector < Transition > >&);    
 
   friend std::ostream& operator << (std::ostream&, const Automata& a);
 };
