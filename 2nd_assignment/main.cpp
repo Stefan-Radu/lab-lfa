@@ -1,6 +1,19 @@
 #include "Automata.hpp"
+#include <iostream>
 
 int main() {
-  Automata a("lnfa0");
-  a.testFile("test0.in");
+
+  const int TEST_CNT = 2;
+
+  for (int i = 0; i < TEST_CNT; ++ i) {
+
+    std::cout << "Test #" << i << ":\n";
+
+    Automata *a = new Automata("./tests/automatas/a" + std::to_string(i));
+    Automata *b = a->nfaFromLnfa();
+    b->testFile("./tests/test0");
+
+    delete a;
+    delete b;
+  }
 }
