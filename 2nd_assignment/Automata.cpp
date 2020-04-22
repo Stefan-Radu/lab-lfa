@@ -395,25 +395,40 @@ Automata* Automata::dfaMinFromDfa() {
     for (int i = 0; i < this->stateCount; ++ i) {
       for (int j = 1; j < this->stateCount; ++ j) {
 
-        for (const Transition &trans1 : transitions[i]) {
-          int other = -1;
-          for (const Transition &trans2 : transitions[j]) {
-            if (trans2.character == trans1.character) {
-              other = trans2.state;
+        for (const char &x: alphabet) {
+
+          int one = -1, two = -1;
+
+          for (const Transition &trans : transitions[i]) {
+            if (trans.character == x) {
+              one = trans.state;
               break;
             }
           }
 
-          if (other == -1 and isFinalState[i]) {
-            if (equivalent[i][j]) {
-              notDone = true;
-              equivalent[i][j] = false;
+          for (const Transition &trans : transitions[j]) {
+            if (trans.character == x) {
+              two = trans.state;
+              break;
             }
           }
-          else if (other != -1 and !equivalent[trans1.state][other]) {
-            if (equivalent[i][j]) {
-              notDone = true;
-              equivalent[i][j] = false;
+
+          if (one < two) std::swap(one, two);
+
+          if (one != -1 or two != -1) {
+            if (two == -1) {
+              if (isFinalState[one]) {
+                if (equivalent[i][j]) {
+                  notDone = true;
+                  equivalent[i][j] = false;
+                }
+              }
+            }
+            else {
+              if (equivalent[i][j]) {
+                notDone = true;
+                equivalent[i][j] = false;
+              }
             }
           }
         }
@@ -429,6 +444,7 @@ Automata* Automata::dfaMinFromDfa() {
     for (int j = i + 1; j < this->stateCount; ++ j) {
       if (equivalent[i][j]) {
         dsu.link(i, j);
+        std::cout << i << ' ' << j << '\n';
       }
     }
   }
@@ -471,9 +487,17 @@ Automata* Automata::dfaMinFromDfa() {
 
   for (int i = 0; i < this->stateCount; ++ i) {
     int state = dsu.getParent(i);
-    for (const Transition &trans: transitions[state]) {
+    for (const Transition &trans: dfaMinTransitionsAux[state]) {
       dfaMinTransitionsReverse[dsu.getParent(trans.state)].insert({state, trans.character});
     }
+  }
+
+  for (int i = 0; i < this->stateCount; ++ i) {
+    std::cout << i << ":  ";
+    for (const Transition &trans: dfaMinTransitionsAux[i]) {
+      std::cout << trans.character << ' ' << trans.state << ' ';
+    }
+    std::cout << '\n';
   }
 
   std::queue < int > q;
@@ -511,6 +535,10 @@ Automata* Automata::dfaMinFromDfa() {
         q.push(trans.state);
       }
     }
+  }
+
+  for (int i = 0; i < this->stateCount; ++ i) {
+    std::cout << i << ' ' << used[i] << '\n';
   }
 
   // Step 6: finalize
