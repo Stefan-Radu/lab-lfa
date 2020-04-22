@@ -413,18 +413,16 @@ Automata* Automata::dfaMinFromDfa() {
             }
           }
 
-          if (one < two) std::swap(one, two);
+          if (one > two) std::swap(one, two);
 
           if (one != -1 or two != -1) {
-            if (two == -1) {
-              if (isFinalState[one]) {
-                if (equivalent[i][j]) {
-                  notDone = true;
-                  equivalent[i][j] = false;
-                }
+            if (one == -1) {
+              if (equivalent[i][j]) {
+                notDone = true;
+                equivalent[i][j] = false;
               }
             }
-            else {
+            else if (!equivalent[one][two]) {
               if (equivalent[i][j]) {
                 notDone = true;
                 equivalent[i][j] = false;
@@ -444,7 +442,6 @@ Automata* Automata::dfaMinFromDfa() {
     for (int j = i + 1; j < this->stateCount; ++ j) {
       if (equivalent[i][j]) {
         dsu.link(i, j);
-        std::cout << i << ' ' << j << '\n';
       }
     }
   }
@@ -492,14 +489,6 @@ Automata* Automata::dfaMinFromDfa() {
     }
   }
 
-  for (int i = 0; i < this->stateCount; ++ i) {
-    std::cout << i << ":  ";
-    for (const Transition &trans: dfaMinTransitionsAux[i]) {
-      std::cout << trans.character << ' ' << trans.state << ' ';
-    }
-    std::cout << '\n';
-  }
-
   std::queue < int > q;
   for (const int &x : dfaMinFinalStatesAux) {
     ++ used[x];
@@ -535,10 +524,6 @@ Automata* Automata::dfaMinFromDfa() {
         q.push(trans.state);
       }
     }
-  }
-
-  for (int i = 0; i < this->stateCount; ++ i) {
-    std::cout << i << ' ' << used[i] << '\n';
   }
 
   // Step 6: finalize
