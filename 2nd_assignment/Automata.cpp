@@ -309,7 +309,7 @@ Automata* Automata::nfaFromLnfa() {
 
 // ================================= NFA TO DFA TRANSFORM ==================================={{{
 
-Automata* Automata::dfsFromNfa() {
+Automata* Automata::dfaFromNfa() {
 
   // Step 1 & 3: remove nondeterminism and rename states
 
@@ -349,7 +349,7 @@ Automata* Automata::dfsFromNfa() {
     }
   }
 
-  // Step 2: innitial and final stated of the dfa
+  // Step 2: initial and final stated of the dfa
 
   std::vector < int > dfaFinalStates;
 
@@ -367,6 +367,179 @@ Automata* Automata::dfsFromNfa() {
   }
 
   return getNewAutomata(dfaStateCount, dfaFinalStates, dfaTransitions);
+}
+
+/*}}}*/
+
+// ================================= DFA to MIN-DFA TRANSFORM ==================================={{{
+
+Automata* Automata::dfaMinFromDfa() {
+
+  // Step 1: find equivalent states
+
+  std::vector < std::vector < bool > > equivalent(this->stateCount,
+      std::vector < bool >(this->stateCount, true));
+  
+  for (int i = 0; i < this->stateCount; ++ i) {
+    for (int j = i + 1; j < this->stateCount; ++ j) {
+      if (isFinalState[i] ^ isFinalState[j]) {
+        equivalent[i][j] = false;
+      }
+    }
+  }
+
+  bool notDone = true;
+  while (notDone) {
+
+    notDone = false;
+    for (int i = 0; i < this->stateCount; ++ i) {
+      for (int j = 1; j < this->stateCount; ++ j) {
+
+        for (const Transition &trans1 : transitions[i]) {
+          int other = -1;
+          for (const Transition &trans2 : transitions[j]) {
+            if (trans2.character == trans1.character) {
+              other = trans2.state;
+              break;
+            }
+          }
+
+          if (other == -1 and isFinalState[i]) {
+            if (equivalent[i][j]) {
+              notDone = true;
+              equivalent[i][j] = false;
+            }
+          }
+          else if (other != -1 and !equivalent[trans1.state][other]) {
+            if (equivalent[i][j]) {
+              notDone = true;
+              equivalent[i][j] = false;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Step 2: group equivalent states
+
+  Dsu dsu(this->stateCount);
+
+  for (int i = 0; i < this->stateCount; ++ i) {
+    for (int j = i + 1; j < this->stateCount; ++ j) {
+      if (equivalent[i][j]) {
+        dsu.link(i, j);
+      }
+    }
+  }
+
+  std::vector < std::set < Transition > > dfaMinTransitionsAux(this->stateCount);
+
+  for (int i = 0; i < this->stateCount; ++ i) {
+    int state = dsu.getParent(i);
+    for (const Transition &trans: transitions[state]) {
+      dfaMinTransitionsAux[state].insert({dsu.getParent(trans.state), trans.character});
+    }
+  }
+
+  // Step 3: get final and initial states
+
+  std::set < int > dfaMinFinalStatesAux;
+  std::vector < int > used(this->stateCount);
+
+  int dfaMinInitialState = 0;
+  for (int i = 0; i < this->stateCount; ++ i) {
+
+    int state = dsu.getParent(i);
+    if (i == this->initialState) {
+      dfaMinInitialState = state;
+    }
+
+    if (not used[state]) {
+      used[state] = true;
+      if (isFinalState[state]) {
+        dfaMinFinalStatesAux.insert(state);
+      }
+    }
+  }
+
+  // Step 4: remove dead-end states; 
+
+  std::fill(used.begin(), used.end(), 0);
+
+  std::vector < std::set < Transition > > dfaMinTransitionsReverse(this->stateCount);
+
+  for (int i = 0; i < this->stateCount; ++ i) {
+    int state = dsu.getParent(i);
+    for (const Transition &trans: transitions[state]) {
+      dfaMinTransitionsReverse[dsu.getParent(trans.state)].insert({state, trans.character});
+    }
+  }
+
+  std::queue < int > q;
+  for (const int &x : dfaMinFinalStatesAux) {
+    ++ used[x];
+    q.push(x);
+  }
+
+  while (not q.empty()) {
+
+    int curState = q.front();
+    q.pop();
+
+    for (const Transition &trans : dfaMinTransitionsReverse[curState]) {
+      if (used[trans.state] < 1) {
+        ++ used[trans.state];
+        q.push(trans.state);
+      }
+    }
+  }
+
+  // Step 5: remove inaccessible states; 
+
+  used[dfaMinInitialState] += 6;
+  q.push(dfaMinInitialState);
+
+  while (not q.empty()) {
+
+    int curState = q.front();
+    q.pop();
+
+    for (const Transition &trans : dfaMinTransitionsAux[curState]) {
+      if (used[trans.state] < 5) {
+        used[trans.state] += 6;
+        q.push(trans.state);
+      }
+    }
+  }
+
+  // Step 6: finalize
+
+  int dfaMinStateCount = 0;
+  std::map < int, int > normalize;
+  std::vector < int > dfaMinFinalStates;
+
+  for (int i = 0; i < this->stateCount; ++ i) {
+    if (used[i] == 7) {
+      normalize[i] = dfaMinStateCount ++;
+      if (dfaMinFinalStatesAux.find(i) != dfaMinFinalStatesAux.end()) {
+        dfaMinFinalStates.emplace_back(dfaMinStateCount - 1);
+      }
+    }
+  }
+
+  std::vector < std::vector < Transition > > dfaMinTransitions(dfaMinStateCount);
+  for (int i = 0; i < this->stateCount; ++ i) {
+    if (used[i] == 7) {
+      for (const Transition &trans : dfaMinTransitionsAux[i]) {
+        if (normalize.find(trans.state) != normalize.end()) {
+          dfaMinTransitions[normalize[i]].emplace_back(normalize[trans.state], trans.character);
+        }
+      }
+    }
+  }
+
+  return getNewAutomata(dfaMinStateCount, dfaMinFinalStates, dfaMinTransitions);
 }
 
 /*}}}*/

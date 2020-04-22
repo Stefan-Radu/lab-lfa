@@ -3,7 +3,7 @@
 
 int main() {
 
-  const int TEST_CNT = 3;
+  const int TEST_CNT = 4;
 
   for (int i = 0; i < TEST_CNT; ++ i) {
 
@@ -17,14 +17,19 @@ int main() {
     b->testFile("./tests/test0");
     std::cout << '\n';
 
-    Automata *c = b->dfsFromNfa();
+    Automata *c = b->dfaFromNfa();
     c->testFile("./tests/test0");
     std::cout << '\n';
 
-    std::cout << *a << "\n\n" << *b << "\n\n" << *c << '\n';
+    Automata *d = c->dfaMinFromDfa();
+    d->testFile("./tests/test0");
+    std::cout << '\n';
+
+    std::cout << *a << "\n\n" << *b << "\n\n" << *c << "\n\n" << *d << '\n';
 
     delete a;
     delete b;
     delete c;
+    delete d;
   }
 }

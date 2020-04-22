@@ -16,7 +16,8 @@ public:
   void testFile(const std::string&);
 
   Automata* nfaFromLnfa();
-  Automata* dfsFromNfa();
+  Automata* dfaFromNfa();
+  Automata* dfaMinFromDfa();
 
 private:
 
