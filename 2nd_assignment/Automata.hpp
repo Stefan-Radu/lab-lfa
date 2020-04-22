@@ -16,6 +16,7 @@ public:
   void testFile(const std::string&);
 
   Automata* nfaFromLnfa();
+  Automata* dfsFromNfa();
 
 private:
 
@@ -32,7 +33,7 @@ private:
   };
 
   int initialState;
-  int stateCount, transitionCount;
+  int stateCount, finalStateCount, transitionCount;
 
   std::set < char > alphabet;
   std::vector < bool > isFinalState;
@@ -44,4 +45,8 @@ private:
   void testString(const std::string&);
 
   void makeLamdaClosure(int, std::vector < std::set < int > >&, std::vector < bool >&);
+
+  friend std::ostream& operator << (std::ostream&, const Automata& a);
 };
+
+std::ostream& operator << (std::ostream&, const Automata& a);

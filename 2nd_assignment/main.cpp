@@ -10,8 +10,11 @@ int main() {
     std::cout << "Test #" << i << ":\n";
 
     Automata *a = new Automata("./tests/automatas/a" + std::to_string(i));
+
     Automata *b = a->nfaFromLnfa();
     b->testFile("./tests/test0");
+
+    /* std::cout << '\n' << *a << "\n\n" << *b << '\n'; */
 
     delete a;
     delete b;

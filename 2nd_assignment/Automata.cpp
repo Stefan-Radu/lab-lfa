@@ -35,18 +35,18 @@ void Automata::initAutomata(const std::string &inputFileName) {
   lambdaTransitions.resize(stateCount);
 
   // nr of characters in the alphabet;
-  int m; fin >> m;
-
-  for (int i = 0; i < m; ++ i) {
+  int charCnt; fin >> charCnt;
+  for (int i = 0; i < charCnt; ++ i) {
     char k; fin >> k;
     alphabet.insert(k);
   }
 
+  // nr of initial states
   fin >> initialState;
 
   // nr of final states;
-  fin >> m;
-  for (int i = 0; i < m; ++ i) {
+  fin >> finalStateCount;
+  for (int i = 0; i < finalStateCount; ++ i) {
     int k; fin >> k;
     isFinalState[k] = true;
   }
@@ -59,12 +59,14 @@ void Automata::initAutomata(const std::string &inputFileName) {
     fin >> x >> a >> y;
 
     assert(x >= 0 and x < stateCount);
-    assert(y >= 0 and y < transitionCount); 
+    assert(y >= 0 and y < stateCount); 
     assert(alphabet.find(a) != alphabet.end() or a == '$');
 
     if (a == '$') lambdaTransitions[x].emplace_back(y, a);
     else transitions[x].emplace_back(y, a);
   }
+
+  fin.close();
 }
 /*}}}*/
 
@@ -127,6 +129,35 @@ void Automata::testString(const std::string &s) {
     std::cout << " REJECTED\n";
   }
 }
+/*}}}*/
+
+// ================================= PRINTING THE AUTOMATA ==================================={{{
+
+std::ostream& operator << (std::ostream &os, const Automata& a) {
+
+  os << a.stateCount << '\n';
+  os << (int) a.alphabet.size() << '\n';
+  for (const char &x : a.alphabet) os << x << ' ';
+  os << '\n';
+  os << a.initialState << '\n';
+  os << a.finalStateCount << '\n';
+  for (int state = 0; state < a.stateCount; ++ state) {
+    if (a.isFinalState[state]) os << state << ' ';
+  }
+  os << '\n';
+  os << a.transitionCount << '\n';
+  for (int state = 0; state < a.stateCount; ++ state) {
+    for (const Automata::Transition &trans : a.transitions[state]) {
+      os << state << ' ' << trans.character << ' ' << trans.state << '\n';
+    }
+    for (const Automata::Transition &trans : a.lambdaTransitions[state]) {
+      os << state << ' ' << trans.character << ' ' << trans.state << '\n';
+    }
+  }
+
+  return os;
+}
+
 /*}}}*/
 
 // ================================= LNFA TO NFA TRANSFORM ==================================={{{
@@ -261,9 +292,46 @@ Automata* Automata::nfaFromLnfa() {
   out.close();
 
   Automata *aux = new Automata("nfa_from_lnfa");
+
   std::remove("nfa_from_lnfa");
 
   return aux;
+}
+
+/*}}}*/
+
+// ================================= NFA TO DFA TRANSFORM ==================================={{{
+
+Automata* Automata::dfsFromNfa() {
+
+  std::map < std::set < int >, int > normalize;
+
+  std::vector < int > dfaIsFinalState;
+
+  int dfaTransitionCnt = 0, dfaFinalStateCount = 0, dfaStateCount = 0;
+  std::vector < std::vector < Transition > > transitions;
+
+
+  // remove nondeterminism
+
+  std::queue < std::set < int > > q;
+
+  int index = 0;
+  q.push({initialState});
+  normalize[{initialState}] = index ++;
+
+  while (not q.empty()) {
+
+    std::set < int > curState = q.front();
+    q.pop();
+
+    for (const char &c : this->alphabet) {
+
+
+
+    }
+  }
+
 }
 
 /*}}}*/
