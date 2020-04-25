@@ -450,7 +450,7 @@ Automata* Automata::dfaMinFromDfa() {
 
   for (int i = 0; i < this->stateCount; ++ i) {
     int state = dsu.getParent(i);
-    for (const Transition &trans: transitions[state]) {
+    for (const Transition &trans: transitions[i]) {
       dfaMinTransitionsAux[state].insert({dsu.getParent(trans.state), trans.character});
     }
   }
@@ -484,7 +484,7 @@ Automata* Automata::dfaMinFromDfa() {
 
   for (int i = 0; i < this->stateCount; ++ i) {
     int state = dsu.getParent(i);
-    for (const Transition &trans: dfaMinTransitionsAux[state]) {
+    for (const Transition &trans: dfaMinTransitionsAux[i]) {
       dfaMinTransitionsReverse[dsu.getParent(trans.state)].insert({state, trans.character});
     }
   }

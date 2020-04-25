@@ -3,7 +3,7 @@
 
 int main() {
 
-  const int TEST_CNT = 4;
+  const int TEST_CNT = 5;
 
   for (int i = 0; i < TEST_CNT; ++ i) {
 
