@@ -158,7 +158,8 @@ def add_terminal_productions(next_letter, productions):
             next_letter = chr(ord(next_letter) + 1)
         for key in productions:
             for i in range(len(productions[key])):
-                productions[key][i] = productions[key][i].replace(terminal, next_letter)
+                if len(productions[key][i]) > 1:
+                    productions[key][i] = productions[key][i].replace(terminal, next_letter)
         productions[next_letter] = [terminal]
     print('After step 4: ', productions)
 
