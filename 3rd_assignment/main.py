@@ -12,6 +12,28 @@ def read_productions(productions):
     f.close();
     print('Before: ', productions)
 
+
+def get_new_productions(production, key):
+
+    poz = []
+    for i in range(len(production)):
+        if production[i] == key:
+            poz.append(i)
+
+    ret = []
+    for mask in range(1 << len(poz)):
+        aux = production
+        for bit in range(len(poz)):
+            if mask & (1 << bit):
+                aux = aux[:poz[bit]] + aux[poz[bit] + 1:]
+        if aux == '':
+            aux = '$'
+
+        ret.append(aux)
+
+    return ret
+
+
 def lambda_production_removal(productions):
 
     done = False
@@ -49,9 +71,12 @@ def lambda_production_removal(productions):
                 for key in productions:
                     aux.clear()
                     for elem in productions[key]:
-                        if len(elem) > 1 and key_with_lambda in elem:
-                            aux.append(elem.replace(key_with_lambda, '', 1))
+                        # if len(elem) > 1 and key_with_lambda in elem:
+                        #     aux.append(elem.replace(key_with_lambda, '', 1))
+                        if key_with_lambda in elem:
+                            aux.extend(get_new_productions(elem, key_with_lambda))
                     productions[key].extend(aux)
+                    productions[key] = list(set(productions[key]))
     print('After step 1: ', productions)
 
 def renamed_production_removal(productions):
