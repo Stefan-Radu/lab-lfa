@@ -20,6 +20,8 @@ def get_new_productions(production, key):
         if production[i] == key:
             poz.append(i)
 
+    poz.reverse()
+
     ret = []
     for mask in range(1 << len(poz)):
         aux = production
@@ -111,17 +113,17 @@ def renamed_production_removal(productions):
 
     # duplicates removal
 
-    to_remove = set()
-
-    for key1 in productions:
-        for key2 in productions:
-            if key2 == 'S' or key1 == key2:
-                continue
-            if set(productions[key1]) == set(productions[key2]):
-                to_remove.add(key2)
-
-    for key in to_remove:
-        del productions[key]
+    # to_remove = set()
+    #
+    # for key1 in productions:
+    #     for key2 in productions:
+    #         if key2 == 'S' or key1 == key2:
+    #             continue
+    #         if set(productions[key1]) == set(productions[key2]):
+    #             to_remove.add(key2)
+    #
+    # for key in to_remove:
+    #     del productions[key]
     print('After step 2: ', productions)
 
 
